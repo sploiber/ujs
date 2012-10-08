@@ -1,0 +1,4 @@
+<%= link_to "Showing all (toggle)", people_path(:admin => true), :remote => true, :id => 'toggle' %>
+<ul id='people'>
+  <%= render @people %>
+</ul>

@@ -1,0 +1,70 @@
+== ujs
+
+This is a very simple Unobtrusive Javascript (ujs) example. It was a hassle
+to set it up, and I wanted to document all the pieces carefully. In my 
+experience, you sit there for a long time looking at a site which doesn't
+trigger Javascript in the Javascript console, until all the pieces are
+precisely in place.
+
+The pieces are:
+
+1) Make sure that 'jquery-rails' (2.1) and 'jquery-ui-rails' are added to the
+Gemfile (the latter is in the assets subgroup).
+
+2) Make sure that the following is in app/assets/javascripts/application.js:
+
+//= require jquery
+//= require jquery_ujs
+
+3) In app/views/people/index.html.erb:
+
+<%= link_to "Showing all (toggle)", people_path(:admin => true), :remote => true, :id => 'toggle' %>
+<ul id='people'>
+  <%= render @people %>
+</ul>
+
+You can call this with http://whatever/people
+to get started. The remote tag will get converted to data-remote="true",
+which is the piece which will trigger the javascript.
+
+4) In app/views/people/index.js.erb:
+
+<% link_text = params[:admin] ? "Admins" : "All" %>
+<% href = params[:admin] ? people_path : people_path(:admin => true) %>
+$("#toggle").html("Displaying <%= link_text %> (toggle)");
+$("#toggle").attr("href", "<%= href %>");
+$("#people").html('<%= escape_javascript(render @people) %>');
+
+The first line is just a string which will be used to label what is going
+on. The second determines which URL is going to get called. Note that the
+second line will toggle back and forth, depending on the presence of
+params[:admin]. The third line updates the link which is created in 
+line 4, and the 5th line calls the javascript.
+
+5) In app/controllers/people_controller.rb:
+
+class PeopleController < ApplicationController
+  def index
+    @people = params[:admin] ? Person.where(:admin => true) : Person.all
+    respond_to do |format|
+      format.html # index.html.erb
+      format.js # index.js.erb
+    end
+  end
+end
+
+and one thing I learned is that the "format.js" must be js, not json.
+json is somehow required by the JQueryUI Autocomplete example, which is 
+different. (I need to understand why that is) I did not implement the XML
+option.
+
+Rails 3.1 and forward do not require the old file rails.js as long as the
+asset pipeline is enabled.
+
+6) In config/routes.rb, you have this:
+
+Ujs::Application.routes.draw do
+  resources :people
+
+At first, the application kept calling the HTML link over and over again.
+This showed me that the Javascript wasn't getting triggered somehow.
