@@ -6,4 +6,7 @@ class PeopleController < ApplicationController
       format.js # index.js.erb
     end
   end
+  def show
+    @person = Person.find(params[:id])
+  end
 end
